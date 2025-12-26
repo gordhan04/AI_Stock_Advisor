@@ -15,4 +15,4 @@ def detect_stage(df):
     
     return "Stage 1 or 3 (Base / Topping)"
 
-stage = detect_stage(df)
+# stage = detect_stage(df)

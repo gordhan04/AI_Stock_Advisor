@@ -9,4 +9,4 @@ def fetch_stock_data(symbol):
     return df
 
 
-data = fetch_stock_data("MSFT")
+# data = fetch_stock_data("MSFT")

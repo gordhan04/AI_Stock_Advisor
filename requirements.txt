@@ -1,2 +1,11 @@
 streamlit 
 yfinance 
+langchain
+langchain-community
+pymupdf
+langchain-core
+langchain-text-splitters
+langchain-openai
+langchain-huggingface
+langchain-chroma
+chromadb
