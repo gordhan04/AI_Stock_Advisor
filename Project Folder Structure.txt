@@ -1,0 +1,53 @@
+stock_ai_advisor/
+│
+├── app.py                     # Main Streamlit app (UI entry point)
+│
+├── config/
+│   ├── settings.py            # API keys, constants, model configs
+│   └── prompts.py             # LLM system & RAG prompts
+│
+├── data/
+│   ├── raw/                   # Raw PDFs (Minervini books)
+│   ├── processed/             # Cleaned & chunked text
+│   └── stock_cache/           # Cached stock price data
+│
+├── ingestion/
+│   ├── pdf_loader.py          # Load Minervini books
+│   ├── text_cleaner.py        # Clean financial text
+│   └── chunker.py             # Chunking strategy
+│
+├── embeddings/
+│   ├── embedder.py            # Create embeddings
+│   └── vector_store.py        # Chroma / FAISS setup
+│
+├── rag/
+│   ├── retriever.py           # Context retrieval logic
+│   ├── rag_chain.py           # RAG pipeline
+│   └── answer_generator.py    # Final LLM answer
+│
+├── stock_data/
+│   ├── fetcher.py             # Fetch stock prices (yfinance/NSE)
+│   ├── indicators.py          # EMA, SMA, RS, Volume
+│   └── fundamentals.py        # (optional) EPS, Sales growth
+│
+├── minervini/
+│   ├── stage_analysis.py      # Stage 1–4 logic
+│   ├── trend_analysis.py      # Bullish / Bearish
+│   └── rules.py               # Minervini rules as code
+│
+├── charts/
+│   ├── tradingview.py         # TradingView widget integration
+│   └── chart_utils.py         # Helper functions
+│
+├── evaluation/
+│   ├── test_cases.py          # Sample stock scenarios
+│   └── sanity_checks.py       # Rule validation
+│
+├── utils/
+│   ├── logger.py              # Logging
+│   ├── helpers.py             # Common utilities
+│   └── cache.py               # Speed optimization
+│
+├── requirements.txt
+├── README.md
+└── .env
