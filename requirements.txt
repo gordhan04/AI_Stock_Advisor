@@ -2,12 +2,14 @@ streamlit
 yfinance 
 langchain
 langchain-community
-pymupdf
+langchain-pymupdf4llm
 langchain-core
 langchain-text-splitters
-langchain-openai
 langchain-huggingface
 langchain-chroma
 chromadb
 langchain-groq
 pandas
+pymupdf 
+pymupdf-layout
+python-dotenv

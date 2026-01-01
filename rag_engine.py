@@ -1,15 +1,26 @@
 # All LangChain / RAG code
 import os
 
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_pymupdf4llm import PyMuPDF4LLMParser
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
-BOOK_PATH = "data/raw/minervini_book.pdf"
+if not os.getenv("GROQ_API_KEY"):
+    raise ValueError("GROQ_API_KEY not found. Please check your .env file.")
+
+BOOK_PATH = "data/raw"
 DB_DIR = "data/processed/chroma"
+from langchain_community.document_loaders import FileSystemBlobLoader
+from langchain_community.document_loaders.generic import GenericLoader
+from langchain_pymupdf4llm import PyMuPDF4LLMParser
+from langchain_text_splitters import MarkdownHeaderTextSplitter
+from langchain_core.documents import Document
+
 
 PROMPT = ChatPromptTemplate.from_messages([
     ("system",
@@ -31,14 +42,40 @@ def get_vector_db():
             embedding_function=embeddings
         )
 
-    loader = PyPDFLoader(BOOK_PATH)
-    docs = loader.load()
+    loader = GenericLoader(
+            blob_loader=FileSystemBlobLoader(
+                path=BOOK_PATH,
+                glob="*.pdf",
+            ),
+            blob_parser=PyMuPDF4LLMParser(),
+            )
+    
+    def split_with_markdown_headers(docs):
+        splitter = MarkdownHeaderTextSplitter(
+            headers_to_split_on=[
+                ("##", "section"),
+                ("###", "subsection"),
+            ]
+        )
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=700,
-        chunk_overlap=100
-    )
-    chunks = splitter.split_documents(docs)
+        final_docs = []
+
+        for doc in docs:
+            # 1️⃣ Split TEXT, not Document
+            splits = splitter.split_text(doc.page_content)
+
+            # 2️⃣ Convert back to Document objects
+            for split in splits:
+                final_docs.append(
+                    Document(
+                        page_content=split.page_content,
+                        metadata={**doc.metadata, **split.metadata}
+                    )
+                )
+
+        return final_docs
+    documents = loader.load()
+    chunks = split_with_markdown_headers(documents)
 
     vectordb = Chroma.from_documents(
         documents=chunks,
@@ -53,9 +90,13 @@ def explain_with_rag(question, stock_context, vectordb):
     docs = retriever.invoke(question)
     rag_context = "\n\n".join(d.page_content for d in docs)
 
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-        temperature=0
+    llm = ChatGroq(
+        model="openai/gpt-oss-20b",
+        temperature=0,
+        max_tokens=None,
+        reasoning_format="parsed",
+        timeout=None,
+        max_retries=2,
     )
 
     messages = PROMPT.invoke({
