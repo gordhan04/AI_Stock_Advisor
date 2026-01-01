@@ -1,6 +1,4 @@
 # All LangChain / RAG code
-import os
-
 from langchain_pymupdf4llm import PyMuPDF4LLMParser
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
@@ -17,7 +15,6 @@ BOOK_PATH = "data/raw"
 DB_DIR = "data/processed/chroma"
 from langchain_community.document_loaders import FileSystemBlobLoader
 from langchain_community.document_loaders.generic import GenericLoader
-from langchain_pymupdf4llm import PyMuPDF4LLMParser
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 from langchain_core.documents import Document
 
@@ -31,26 +28,8 @@ PROMPT = ChatPromptTemplate.from_messages([
      "Question:\n{question}")
 ])
 
-def get_vector_db():
-    embeddings = HuggingFaceEmbeddings(
-        model_name="BAAI/bge-base-en-v1.5"
-    )
-
-    if os.path.exists(DB_DIR):
-        return Chroma(
-            persist_directory=DB_DIR,
-            embedding_function=embeddings
-        )
-
-    loader = GenericLoader(
-            blob_loader=FileSystemBlobLoader(
-                path=BOOK_PATH,
-                glob="*.pdf",
-            ),
-            blob_parser=PyMuPDF4LLMParser(),
-            )
-    
-    def split_with_markdown_headers(docs):
+# Split Document Function
+def split_with_markdown_headers(docs):
         splitter = MarkdownHeaderTextSplitter(
             headers_to_split_on=[
                 ("##", "section"),
@@ -69,11 +48,34 @@ def get_vector_db():
                 final_docs.append(
                     Document(
                         page_content=split.page_content,
-                        metadata={**doc.metadata, **split.metadata}
+                        metadata={**(doc.metadata or {}), **split.metadata}
                     )
                 )
 
         return final_docs
+# Vector Database
+
+def get_vector_db():
+    embeddings = HuggingFaceEmbeddings(
+        model_name="BAAI/bge-base-en-v1.5"
+    )
+
+    if os.path.exists(DB_DIR) and os.listdir(DB_DIR):
+        return Chroma(
+            persist_directory=DB_DIR,
+            embedding_function=embeddings
+        )
+
+
+    loader = GenericLoader(
+            blob_loader=FileSystemBlobLoader(
+                path=BOOK_PATH,
+                glob="*.pdf",
+            ),
+            blob_parser=PyMuPDF4LLMParser(),
+            )
+    
+    
     documents = loader.load()
     chunks = split_with_markdown_headers(documents)
 
@@ -85,8 +87,10 @@ def get_vector_db():
     return vectordb
 
 def explain_with_rag(question, stock_context, vectordb):
-    retriever = vectordb.as_retriever(search_kwargs={"k": 4})
-
+    retriever = vectordb.as_retriever(
+    search_type="mmr",
+    search_kwargs={"k": 4, "fetch_k": 20}
+    )
     docs = retriever.invoke(question)
     rag_context = "\n\n".join(d.page_content for d in docs)
 

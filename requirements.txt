@@ -10,6 +10,6 @@ langchain-chroma
 chromadb
 langchain-groq
 pandas
-pymupdf 
+pymupdf==1.26.6
 pymupdf-layout
 python-dotenv
