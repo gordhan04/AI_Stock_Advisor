@@ -1,6 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
-
 
 from stock_logic import (
     fetch_stock_data,
@@ -11,40 +9,6 @@ from stock_logic import (
 )
 from rag_engine import get_vector_db, explain_with_rag
 
-def tradingview_chart(symbol):
-    html = f"""
-    <!-- TradingView Widget BEGIN -->
-    <div class="tradingview-widget-container">
-      <div id="tradingview_chart"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-      <script type="text/javascript">
-      new TradingView.widget(
-      {{
-        "width": "100%",
-        "height": 500,
-        "symbol": "{symbol}",
-        "interval": "D",
-        "timezone": "Asia/Kolkata",
-        "theme": "light",
-        "style": "1",
-        "locale": "en",
-        "toolbar_bg": "#f1f3f6",
-        "enable_publishing": false,
-        "allow_symbol_change": true,
-        "hide_side_toolbar": false,
-        "studies": [
-          "MASimple@tv-basicstudies"
-        ],
-        "container_id": "tradingview_chart"
-      }}
-      );
-      </script>
-    </div>
-    <!-- TradingView Widget END -->
-    """
-    components.html(html, height=520)
-
-
 st.title("📈 AI Stock Analyst (Minervini Method)")
 
 # Init vector DB ONCE
@@ -52,17 +16,55 @@ if "vectordb" not in st.session_state:
     with st.spinner("Loading Minervini knowledge base..."):
         st.session_state.vectordb = get_vector_db()
 
+def normalize_yfinance_symbol(symbol, market):
+    symbol = symbol.upper().strip()
+
+    if market == "NSE":
+        return f"{symbol}.NS"
+    elif market == "BSE":
+        return f"{symbol}.BO"
+    elif market == "US":
+        return symbol
+    
+market = st.selectbox(
+    "Select Market",
+    ["NSE", "BSE", "US"]
+)
+
+import plotly.graph_objects as go
+
+def plot_stock_chart(df, symbol):
+    fig = go.Figure(
+        data=[
+            go.Candlestick(
+                x=df.index,
+                open=df["Open"],
+                high=df["High"],
+                low=df["Low"],
+                close=df["Close"],
+                name="Price"
+            )
+        ]
+    )
+
+    fig.update_layout(
+        title=f"{symbol} Price Chart",
+        xaxis_title="Date",
+        yaxis_title="Price",
+        height=520,
+        xaxis_rangeslider_visible=False
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 symbol = st.text_input("Enter Stock Symbol (e.g. TCS, AAPL)")
-if symbol:
-    st.subheader("📊 Price Chart")
-    tradingview_chart(symbol)
-
 
 if symbol:
-    df = fetch_stock_data(symbol)
+    yf_symbol = normalize_yfinance_symbol(symbol,market)
+    df = fetch_stock_data(yf_symbol)
     df = add_indicators(df)
-
+    st.subheader("📊 Price Chart")
+    plot_stock_chart(df, yf_symbol)
     stage = detect_stage(df)
     trend = trend_signal(stage)
 
@@ -90,5 +92,3 @@ if symbol:
         st.markdown("### 📘 Explanation")
         st.write(answer)
     
-import streamlit as st
-import streamlit.components.v1 as components

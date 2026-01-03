@@ -13,3 +13,4 @@ pandas
 pymupdf==1.26.6
 pymupdf-layout
 python-dotenv
+plotly
