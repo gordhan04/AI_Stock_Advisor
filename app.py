@@ -1,3 +1,4 @@
+from langchain_core.messages import HumanMessage
 import streamlit as st
 from plot_chart import plot_stock_chart
 from stock_logic import (
@@ -7,7 +8,8 @@ from stock_logic import (
     trend_signal,
     build_stock_context
 )
-from rag_engine import get_vector_db, explain_with_rag
+from rag_engine import get_vector_db
+
 
 st.title("📈 AI Stock Analyst (Minervini Method)")
 
@@ -15,6 +17,7 @@ st.title("📈 AI Stock Analyst (Minervini Method)")
 if "vectordb" not in st.session_state:
     with st.spinner("Loading Minervini knowledge base..."):
         st.session_state.vectordb = get_vector_db()
+
 
 def normalize_yfinance_symbol(symbol, market):
     symbol = symbol.upper().strip()
@@ -39,34 +42,13 @@ if symbol:
     df = add_indicators(df)
     st.subheader("📊 Price Chart")
     fig = plot_stock_chart(df, yf_symbol)
-        # --- Stage-2 Highlight Zones ---
-    stage2 = (df["Close"] > df["DMA150"]) & (df["DMA150"] > df["DMA200"])
-
-    in_zone = False
-    start_date = None
-
-    for date, is_stage2 in stage2.items():
-        if is_stage2 and not in_zone:
-            start_date = date
-            in_zone = True
-        elif not is_stage2 and in_zone:
-            fig.add_vrect(
-                x0=start_date,
-                x1=date,
-                fillcolor="rgba(0, 255, 0, 0.12)",
-                line_width=0
-            )
-            in_zone = False
-
-    # If still in stage-2 at end
-    if in_zone:
-        fig.add_vrect(
-            x0=start_date,
-            x1=df.index[-1],
-            fillcolor="rgba(0, 255, 0, 0.12)",
-            line_width=0
-        )
     st.plotly_chart(fig, use_container_width=True)
+    risk_pct = 8
+    st.warning(
+        f"⚠️ Risk View: Initial stop-loss must  not exceed ~{risk_pct}% below entry price. "
+        "Minervini advises exiting quickly if a stock violates key moving averages."
+    )
+
 
     stage = detect_stage(df)
     trend = trend_signal(stage)
@@ -79,19 +61,34 @@ if symbol:
     stock_context = build_stock_context(
         symbol, stage, trend, latest
     )
+    if "stock_context" not in st.session_state:
+        st.session_state.stock_context = stock_context
+
+    # init LLM agent with current context
+    from chat_agent import create_stock_chat_agent
+    if "current_symbol" not in st.session_state or st.session_state.current_symbol != yf_symbol:
+        st.session_state.current_symbol = yf_symbol
+        st.session_state.agent = create_stock_chat_agent(st.session_state.stock_context, st.session_state.vectordb)
 
     question = st.text_input(
         "Ask about this stock (Minervini style)",
         "Is this stock in a proper buyable stage?"
     )
 
+    if "thread_id" not in st.session_state:
+        st.session_state.thread_id = f"{yf_symbol}_chat"
     if question:
-        answer = explain_with_rag(
-            question,
-            stock_context,
-            st.session_state.vectordb
+        response = st.session_state.agent.invoke(
+            {
+                "messages": [
+                    HumanMessage(content=question)
+                ]
+            },
+            {
+                "configurable": {
+                    "thread_id": f"{yf_symbol}_chat"
+                }
+            }
         )
 
-        st.markdown("### 📘 Explanation")
-        st.write(answer)
-
+        st.write(response["messages"][-1].content)

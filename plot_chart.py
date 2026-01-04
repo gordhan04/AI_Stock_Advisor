@@ -59,5 +59,32 @@ def plot_stock_chart(df, symbol):
         height=650,
         legend=dict(orientation="h", yanchor="bottom", y=1.02)
     )
+        # --- Stage-2 Highlight Zones ---
+    stage2 = (df["Close"] > df["DMA150"]) & (df["DMA150"] > df["DMA200"])
+
+    in_zone = False
+    start_date = None
+
+    for date, is_stage2 in stage2.items():
+        if is_stage2 and not in_zone:
+            start_date = date
+            in_zone = True
+        elif not is_stage2 and in_zone:
+            fig.add_vrect(
+                x0=start_date,
+                x1=date,
+                fillcolor="rgba(0, 255, 0, 0.12)",
+                line_width=0
+            )
+            in_zone = False
+
+    # If still in stage-2 at end
+    if in_zone:
+        fig.add_vrect(
+            x0=start_date,
+            x1=df.index[-1],
+            fillcolor="rgba(0, 255, 0, 0.12)",
+            line_width=0
+        )
 
     return fig
