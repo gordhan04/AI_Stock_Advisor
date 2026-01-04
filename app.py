@@ -112,7 +112,7 @@ if symbol:
         # Display price chart
         st.subheader("📊 Price Chart")
         fig = plot_stock_chart(df, yf_symbol)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig,width="stretch")
 
         # Risk warning
         st.warning(

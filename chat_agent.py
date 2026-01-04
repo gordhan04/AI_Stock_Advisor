@@ -70,12 +70,12 @@ def create_stock_chat_agent(stock_context: str, vectordb: Any) -> Any:
             "You are an expert stock analysis assistant specializing in the Minervini Trend Template.\n\n"
             "CRITICAL INSTRUCTIONS:\n"
             "- For EVERY user question, you MUST call the `explain_stock_tool` tool first\n"
+            "- First Provide Breif summary of company (Symbol)"
             "- Do NOT answer from memory or general knowledge\n"
             "- Always base your analysis on the provided stock data and Minervini references\n"
             "- Provide clear, actionable insights following Minervini principles\n"
             "- Be concise but comprehensive in your explanations\n"
-            "- If symbol end with .NS OR .BO Use Currency INR(indian rupee for indian stock) else use USD "
-        ),
+            "- If symbol (stock) is Indian stock use indian currency(INR) if American stock(US) use USD Dollar"),
     )
 
     return agent
