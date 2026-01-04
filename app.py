@@ -5,6 +5,8 @@ A Streamlit application for stock analysis based on Mark Minervini's trend templ
 
 from langchain_core.messages import HumanMessage
 import streamlit as st
+import time
+
 from plot_chart import plot_stock_chart
 from stock_logic import (
     fetch_stock_data,
@@ -16,6 +18,10 @@ from stock_logic import (
 from rag_engine import get_vector_db
 
 
+# Constants
+DEFAULT_RISK_PCT = 8
+
+
 # Page configuration
 st.set_page_config(
     page_title="AI Stock Analyst",
@@ -24,11 +30,6 @@ st.set_page_config(
 )
 
 st.title("📈 AI Stock Analyst (Minervini Method)")
-
-# Initialize vector DB once per session
-if "vectordb" not in st.session_state:
-    with st.spinner("Loading Minervini knowledge base..."):
-        st.session_state.vectordb = get_vector_db()
 
 
 def normalize_yfinance_symbol(symbol: str, market: str) -> str:
@@ -44,14 +45,28 @@ def normalize_yfinance_symbol(symbol: str, market: str) -> str:
     """
     symbol = symbol.upper().strip()
 
-    if market == "NSE":
-        return f"{symbol}.NS"
-    elif market == "BSE":
-        return f"{symbol}.BO"
-    elif market == "US":
-        return symbol
-    else:
-        return symbol
+    market_suffixes = {
+        "NSE": ".NS",
+        "BSE": ".BO",
+        "US": ""
+    }
+
+    return f"{symbol}{market_suffixes.get(market, '')}"
+
+
+def clear_chat_history() -> None:
+    """Clear the chat history for the current stock."""
+    if "thread_id" in st.session_state:
+        # Reset thread to start new conversation
+        current_symbol = st.session_state.get("current_symbol", "")
+        st.session_state.thread_id = f"{current_symbol}_chat_{int(time.time())}"
+        st.success("Chat history cleared!")
+
+
+# Initialize vector DB once per session
+if "vectordb" not in st.session_state:
+    with st.spinner("Loading Minervini knowledge base..."):
+        st.session_state.vectordb = get_vector_db()
 
 
 # Sidebar for inputs
@@ -70,6 +85,13 @@ with st.sidebar:
         help="Enter the stock ticker symbol"
     ).strip()
 
+    if symbol:
+        st.markdown("---")
+        st.subheader("Chat Controls")
+        if st.button("🗑️ Clear Chat History", help="Start a new conversation"):
+            clear_chat_history()
+
+
 # Main content area
 if symbol:
     try:
@@ -81,7 +103,7 @@ if symbol:
             df = fetch_stock_data(yf_symbol)
 
         if df is None or df.empty:
-            st.error(f"Could not fetch data for symbol '{symbol}'. Please check the symbol and try again.")
+            st.error(f"❌ Could not fetch data for symbol '{symbol}'. Please check the symbol and try again.")
             st.stop()
 
         # Add technical indicators
@@ -93,9 +115,8 @@ if symbol:
         st.plotly_chart(fig, use_container_width=True)
 
         # Risk warning
-        risk_pct = 8
         st.warning(
-            f"⚠️ **Risk Management**: Initial stop-loss should not exceed ~{risk_pct}% below entry price. "
+            f"⚠️ **Risk Management**: Initial stop-loss should not exceed ~{DEFAULT_RISK_PCT}% below entry price. "
             "Minervini advises exiting quickly if a stock violates key moving averages."
         )
 
@@ -154,16 +175,24 @@ if symbol:
             st.write(response["messages"][-1].content)
 
     except Exception as e:
-        st.error(f"An error occurred while analyzing {symbol}: {str(e)}")
-        st.info("Please try again or contact support if the issue persists.")
+        st.error(f"❌ An error occurred while analyzing {symbol}: {str(e)}")
+        st.info("💡 Please try again or contact support if the issue persists.")
 
 else:
     # Welcome message when no symbol is entered
     st.info("👋 Welcome! Please select a market and enter a stock symbol in the sidebar to begin analysis.")
     st.markdown("""
     ### How to use:
-    1. Select your market (NSE, BSE, or US)
-    2. Enter a stock symbol (e.g., TCS for Tata Consultancy Services)
-    3. View the technical analysis chart
-    4. Ask questions to the AI analyst about the stock's Minervini stage
+    1. **Select Market**: Choose NSE, BSE, or US
+    2. **Enter Symbol**: Input stock ticker (e.g., TCS, AAPL, RELIANCE)
+    3. **View Analysis**: See technical charts and Minervini stage
+    4. **Ask Questions**: Chat with AI analyst about the stock
+    5. **Clear Chat**: Use sidebar button to reset conversation
+
+    ### Features:
+    - 📊 Interactive technical charts with moving averages
+    - 🎯 Minervini trend template analysis
+    - 🤖 AI-powered stock insights
+    - 📈 Multi-market support
+    - 📚 Knowledge base from Minervini methodology
     """)
