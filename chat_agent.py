@@ -13,6 +13,7 @@ model = ChatGroq(
         reasoning_format="parsed",
         timeout=None,
         max_retries=2,
+        streaming=True,
     )
 
 def create_stock_chat_agent(stock_context, vectordb):
@@ -41,6 +42,6 @@ def create_stock_chat_agent(stock_context, vectordb):
             "For EVERY user question, you MUST call the tool "
             "`explain_stock_tool` before responding.\n"
             "Do NOT answer from memory. Do NOT skip the tool."
-        ),
+        )
     )
     return agent
