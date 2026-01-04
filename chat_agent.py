@@ -21,8 +21,7 @@ model = ChatGroq(
     reasoning_format="parsed",
     timeout=None,
     max_retries=2,
-    streaming=True,  # Enable streaming for better response handling
-)
+    )
 
 
 def create_stock_chat_agent(stock_context: str, vectordb: Any) -> Any:
@@ -74,7 +73,8 @@ def create_stock_chat_agent(stock_context: str, vectordb: Any) -> Any:
             "- Do NOT answer from memory or general knowledge\n"
             "- Always base your analysis on the provided stock data and Minervini references\n"
             "- Provide clear, actionable insights following Minervini principles\n"
-            "- Be concise but comprehensive in your explanations"
+            "- Be concise but comprehensive in your explanations\n"
+            "- If symbol end with .NS OR .BO Use Currency INR(indian rupee for indian stock) else use USD "
         ),
     )
 

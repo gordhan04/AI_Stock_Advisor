@@ -47,7 +47,7 @@ def plot_stock_chart(df: pd.DataFrame, symbol: str) -> go.Figure:
     # Add moving averages
     moving_averages = [
         ("DMA50", "DMA 50", "blue", 1),
-        ("DMA150", "DMA 150", "orange", 2),
+        ("DMA150", "DMA 150", "orange", 1.5),
         ("DMA200", "DMA 200", "red", 2),
     ]
 
@@ -134,8 +134,8 @@ def _add_stage2_highlights(df: pd.DataFrame, fig: go.Figure) -> None:
                 x1=date,
                 fillcolor="rgba(0, 255, 0, 0.12)",
                 line_width=0,
-                annotation_text="Stage 2",
-                annotation_position="top left"
+                # annotation_text="Stage 2",
+                # annotation_position="top left"
             )
             in_zone = False
 
@@ -146,6 +146,6 @@ def _add_stage2_highlights(df: pd.DataFrame, fig: go.Figure) -> None:
             x1=df.index[-1],
             fillcolor="rgba(0, 255, 0, 0.12)",
             line_width=0,
-            annotation_text="Stage 2",
-            annotation_position="top left"
+            # annotation_text="Stage 2",
+            # annotation_position="top left"
         )

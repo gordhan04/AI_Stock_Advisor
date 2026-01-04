@@ -116,7 +116,7 @@ if symbol:
 
         # Risk warning
         st.warning(
-            f"⚠️ **Risk Management**: Initial stop-loss should not exceed ~{DEFAULT_RISK_PCT}% below entry price. "
+            f"⚠️ **Risk Management**: Initial stop-loss should not exceed {DEFAULT_RISK_PCT}% below entry price. "
             "Minervini advises exiting quickly if a stock violates key moving averages."
         )
 
