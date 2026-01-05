@@ -2,10 +2,6 @@
 🤖 AI-Powered Stock Analysis | 📊 Technical Charts | 🎯 Minervini Methodology
 Professional-grade stock analysis application with advanced AI insights
 
----
-
-## 🚀 **Live Demo**
-# i will add later after deployment
 
 ## 📋 **Table of Contents**
 - [✨ Features](#-features)
